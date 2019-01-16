@@ -5,7 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/snappy"
-	"go-sandbox/loki-example/logproto"
+	"github.com/afiskon/promtail-client/logproto"
 	"log"
 	"sync"
 	"time"
