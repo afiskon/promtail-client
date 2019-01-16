@@ -39,19 +39,19 @@ func NewClientProto(conf ClientConfig) (Client, error) {
 }
 
 func (c *clientProto) Debugf(format string, args ...interface{}) {
-	c.log(format, DEBUG, "Debug: ", args)
+	c.log(format, DEBUG, "Debug: ", args...)
 }
 
 func (c *clientProto) Infof(format string, args ...interface{}) {
-	c.log(format, INFO, "Info: ", args)
+	c.log(format, INFO, "Info: ", args...)
 }
 
 func (c *clientProto) Warnf(format string, args ...interface{}) {
-	c.log(format, WARN, "Warn: ", args)
+	c.log(format, WARN, "Warn: ", args...)
 }
 
 func (c *clientProto) Errorf(format string, args ...interface{}) {
-	c.log(format, ERROR, "Error: ", args)
+	c.log(format, ERROR, "Error: ", args...)
 }
 
 func (c *clientProto) log(format string, level LogLevel, prefix string, args ...interface{}) {
