@@ -2,6 +2,10 @@
 
 Promtail client library. Promtail is an agent for [Loki](https://github.com/grafana/loki) logging system.
 
+*Warning!* Please note, that at time of writing Loki and Promtail are not
+production ready. Particularly see [issue
+#168](https://github.com/grafana/loki/issues/168#issuecomment-455169837).
+
 This library supports both JSON and Protobuf APIs.
 
 Usage example:
