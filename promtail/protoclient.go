@@ -7,7 +7,6 @@ import (
 	"github.com/golang/snappy"
 	"github.com/afiskon/promtail-client/logproto"
 	"log"
-	"sort"
 	"sync"
 	"time"
 )
@@ -120,12 +119,6 @@ func (c *clientProto) run() {
 }
 
 func (c *clientProto) send(entries []*logproto.Entry) {
-	// Make sure entries are in order, otherwise Promtail will complain
-	sort.Slice(entries, func(i, j int) bool {
-		return (entries[i].Timestamp.Seconds < entries[j].Timestamp.Seconds) &&
-			(entries[i].Timestamp.Nanos < entries[j].Timestamp.Nanos)
-	})
-
 	var streams []*logproto.Stream
 	streams = append(streams, &logproto.Stream{
 		Labels:  c.config.Labels,

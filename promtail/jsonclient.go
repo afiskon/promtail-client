@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sort"
 	"sync"
 	"time"
 )
@@ -121,11 +120,6 @@ func (c *clientJson) run() {
 }
 
 func (c *clientJson) send(entries []*jsonLogEntry) {
-	// Make sure entries are in order, otherwise Promtail will complain
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Ts.UnixNano() < entries[j].Ts.UnixNano()
-	})
-
 	var streams []promtailStream
 	streams = append(streams, promtailStream{
 		Labels:  c.config.Labels,
