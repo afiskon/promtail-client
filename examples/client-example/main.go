@@ -80,7 +80,7 @@ func main() {
 		tstamp := time.Now().String()
 		loki.Debugf("source = %s time = %s, i = %d\n", source_name, tstamp, i)
 		loki.Infof("source = %s, time = %s, i = %d\n", source_name, tstamp, i)
-		loki.Warnf("source = %s, tine = %s, i = %d\n", source_name, tstamp, i)
+		loki.Warnf("source = %s, time = %s, i = %d\n", source_name, tstamp, i)
 		loki.Errorf("source = %s, time = %s, i = %d\n", source_name, tstamp, i)
 		time.Sleep(1 * time.Second)
 	}
