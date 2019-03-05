@@ -112,8 +112,8 @@ func (c *clientProto) run() {
 				c.send(batch)
 				batch = []*logproto.Entry{}
 				batchSize = 0
-				maxWait.Reset(c.config.BatchWait)
 			}
+			maxWait.Reset(c.config.BatchWait)
 		}
 	}
 }
