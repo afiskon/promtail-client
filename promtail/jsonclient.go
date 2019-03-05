@@ -113,8 +113,8 @@ func (c *clientJson) run() {
 				c.send(batch)
 				batch = []*jsonLogEntry{}
 				batchSize = 0
-				maxWait.Reset(c.config.BatchWait)
 			}
+			maxWait.Reset(c.config.BatchWait)
 		}
 	}
 }
