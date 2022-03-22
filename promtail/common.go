@@ -31,6 +31,8 @@ type ClientConfig struct {
 	SendLevel LogLevel
 	// Logs are printed to stdout if the entry level is >= PrintLevel
 	PrintLevel LogLevel
+	// fmt string to express the prefix
+	PrefixFormat string
 }
 
 type Client interface {

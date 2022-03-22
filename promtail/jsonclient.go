@@ -11,7 +11,7 @@ import (
 type jsonLogEntry struct {
 	Ts    time.Time `json:"ts"`
 	Line  string    `json:"line"`
-	level LogLevel // not used in JSON
+	level LogLevel  // not used in JSON
 }
 
 type promtailStream struct {
@@ -24,19 +24,26 @@ type promtailMsg struct {
 }
 
 type clientJson struct {
-	config    *ClientConfig
-	quit      chan struct{}
-	entries   chan *jsonLogEntry
-	waitGroup sync.WaitGroup
-	client    httpClient
+	config       *ClientConfig
+	quit         chan struct{}
+	entries      chan *jsonLogEntry
+	waitGroup    sync.WaitGroup
+	client       httpClient
+	prefixFormat string
 }
 
 func NewClientJson(conf ClientConfig) (Client, error) {
+	prefixFormat := "%s: "
+	if conf.PrefixFormat != "" {
+		prefixFormat = conf.PrefixFormat
+	}
+
 	client := clientJson{
-		config:  &conf,
-		quit:    make(chan struct{}),
-		entries: make(chan *jsonLogEntry, LOG_ENTRIES_CHAN_SIZE),
-		client:  httpClient{},
+		config:       &conf,
+		quit:         make(chan struct{}),
+		entries:      make(chan *jsonLogEntry, LOG_ENTRIES_CHAN_SIZE),
+		client:       httpClient{},
+		prefixFormat: prefixFormat,
 	}
 
 	client.waitGroup.Add(1)
@@ -46,19 +53,23 @@ func NewClientJson(conf ClientConfig) (Client, error) {
 }
 
 func (c *clientJson) Debugf(format string, args ...interface{}) {
-	c.log(format, DEBUG, "Debug: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Debug")
+	c.log(format, DEBUG, prefix, args...)
 }
 
 func (c *clientJson) Infof(format string, args ...interface{}) {
-	c.log(format, INFO, "Info: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Info")
+	c.log(format, INFO, prefix, args...)
 }
 
 func (c *clientJson) Warnf(format string, args ...interface{}) {
-	c.log(format, WARN, "Warn: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Warn")
+	c.log(format, WARN, prefix, args...)
 }
 
 func (c *clientJson) Errorf(format string, args ...interface{}) {
-	c.log(format, ERROR, "Error: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Error")
+	c.log(format, ERROR, prefix, args...)
 }
 
 func (c *clientJson) log(format string, level LogLevel, prefix string, args ...interface{}) {

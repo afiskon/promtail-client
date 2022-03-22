@@ -2,10 +2,10 @@ package promtail
 
 import (
 	"fmt"
+	"github.com/afiskon/promtail-client/logproto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/snappy"
-	"github.com/afiskon/promtail-client/logproto"
 	"log"
 	"sync"
 	"time"
@@ -17,19 +17,26 @@ type protoLogEntry struct {
 }
 
 type clientProto struct {
-	config    *ClientConfig
-	quit      chan struct{}
-	entries   chan protoLogEntry
-	waitGroup sync.WaitGroup
-	client    httpClient
+	config       *ClientConfig
+	quit         chan struct{}
+	entries      chan protoLogEntry
+	waitGroup    sync.WaitGroup
+	client       httpClient
+	prefixFormat string
 }
 
 func NewClientProto(conf ClientConfig) (Client, error) {
+	prefixFormat := "%s: "
+	if conf.PrefixFormat != "" {
+		prefixFormat = conf.PrefixFormat
+	}
+
 	client := clientProto{
-		config:  &conf,
-		quit:    make(chan struct{}),
-		entries: make(chan protoLogEntry, LOG_ENTRIES_CHAN_SIZE),
-		client:  httpClient{},
+		config:       &conf,
+		quit:         make(chan struct{}),
+		entries:      make(chan protoLogEntry, LOG_ENTRIES_CHAN_SIZE),
+		client:       httpClient{},
+		prefixFormat: prefixFormat,
 	}
 
 	client.waitGroup.Add(1)
@@ -39,19 +46,23 @@ func NewClientProto(conf ClientConfig) (Client, error) {
 }
 
 func (c *clientProto) Debugf(format string, args ...interface{}) {
-	c.log(format, DEBUG, "Debug: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Debug")
+	c.log(format, DEBUG, prefix, args...)
 }
 
 func (c *clientProto) Infof(format string, args ...interface{}) {
-	c.log(format, INFO, "Info: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Info")
+	c.log(format, INFO, prefix, args...)
 }
 
 func (c *clientProto) Warnf(format string, args ...interface{}) {
-	c.log(format, WARN, "Warn: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Warn")
+	c.log(format, WARN, prefix, args...)
 }
 
 func (c *clientProto) Errorf(format string, args ...interface{}) {
-	c.log(format, ERROR, "Error: ", args...)
+	prefix := fmt.Sprintf(c.prefixFormat, "Error")
+	c.log(format, ERROR, prefix, args...)
 }
 
 func (c *clientProto) log(format string, level LogLevel, prefix string, args ...interface{}) {
