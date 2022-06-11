@@ -20,13 +20,13 @@ func displayInvalidName(arg string) {
 
 func nameIsValid(name string) bool {
 	for _, c := range name {
-		if !((c >= 'a' && c <= 'z') ||
-			(c >= 'A' && c <= 'Z') ||
-			(c >= '0' && c <= '9') ||
-			(c == '-') || (c == '_')) {
-			return false
-		}
-	}
+        if !((c >= 'a' && c <= 'z') ||
+             (c >= 'A' && c <= 'Z') ||
+             (c >= '0' && c <= '9') ||
+             (c == '-') || (c == '_')) {
+            return false
+        }
+    }
 	return true
 }
 
@@ -56,8 +56,8 @@ func main() {
 		Labels:             labels,
 		BatchWait:          5 * time.Second,
 		BatchEntriesNumber: 100,
-		SendLevel:          promtail.INFO,
-		PrintLevel:         promtail.ERROR,
+		SendLevel:			promtail.INFO,
+		PrintLevel: 		promtail.ERROR,
 	}
 
 	var (
