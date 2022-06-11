@@ -38,6 +38,11 @@ type Client interface {
 	Infof(format string, args ...interface{})
 	Warnf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
+	DebugfWithLabel(label, format string, args ...interface{})
+	InfofWithLabel(label, format string, args ...interface{})
+	WarnfWithLabel(label, format string, args ...interface{})
+	ErrorfWithLabel(label, format string, args ...interface{})
+	LogfWithLabel(label, format string, args ...interface{})
 	Shutdown()
 }
 

@@ -2,15 +2,20 @@ package promtail
 
 import (
 	"fmt"
+	"github.com/afiskon/promtail-client/logproto"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/snappy"
-	"github.com/afiskon/promtail-client/logproto"
 	"log"
 	"sync"
 	"time"
 )
 
+type protoLogEntryLabel struct {
+	entry *logproto.Entry
+	level LogLevel
+	label string
+}
 type protoLogEntry struct {
 	entry *logproto.Entry
 	level LogLevel
@@ -19,7 +24,7 @@ type protoLogEntry struct {
 type clientProto struct {
 	config    *ClientConfig
 	quit      chan struct{}
-	entries   chan protoLogEntry
+	entries   chan protoLogEntryLabel
 	waitGroup sync.WaitGroup
 	client    httpClient
 }
@@ -28,7 +33,7 @@ func NewClientProto(conf ClientConfig) (Client, error) {
 	client := clientProto{
 		config:  &conf,
 		quit:    make(chan struct{}),
-		entries: make(chan protoLogEntry, LOG_ENTRIES_CHAN_SIZE),
+		entries: make(chan protoLogEntryLabel, LOG_ENTRIES_CHAN_SIZE),
 		client:  httpClient{},
 	}
 
@@ -39,25 +44,46 @@ func NewClientProto(conf ClientConfig) (Client, error) {
 }
 
 func (c *clientProto) Debugf(format string, args ...interface{}) {
-	c.log(format, DEBUG, "Debug: ", args...)
+	c.log("", format, DEBUG, "Debug: ", args...)
 }
 
 func (c *clientProto) Infof(format string, args ...interface{}) {
-	c.log(format, INFO, "Info: ", args...)
+	c.log("", format, INFO, "Info: ", args...)
 }
 
 func (c *clientProto) Warnf(format string, args ...interface{}) {
-	c.log(format, WARN, "Warn: ", args...)
+	c.log("", format, WARN, "Warn: ", args...)
 }
 
 func (c *clientProto) Errorf(format string, args ...interface{}) {
-	c.log(format, ERROR, "Error: ", args...)
+	c.log("", format, ERROR, "Error: ", args...)
+}
+func (c *clientProto) Logf(format string, args ...interface{}) {
+	c.log("", format, INFO, "", args...)
 }
 
-func (c *clientProto) log(format string, level LogLevel, prefix string, args ...interface{}) {
+func (c *clientProto) DebugfWithLabel(label, format string, args ...interface{}) {
+	c.log(label, format, DEBUG, "Debug: ", args...)
+}
+
+func (c *clientProto) InfofWithLabel(label, format string, args ...interface{}) {
+	c.log(label, format, INFO, "Info: ", args...)
+}
+
+func (c *clientProto) WarnfWithLabel(label, format string, args ...interface{}) {
+	c.log(label, format, WARN, "Warn: ", args...)
+}
+
+func (c *clientProto) ErrorfWithLabel(label, format string, args ...interface{}) {
+	c.log(label, format, ERROR, "Error: ", args...)
+}
+func (c *clientProto) LogfWithLabel(label, format string, args ...interface{}) {
+	c.log(label, format, INFO, "", args...)
+}
+func (c *clientProto) log(label, format string, level LogLevel, prefix string, args ...interface{}) {
 	if (level >= c.config.SendLevel) || (level >= c.config.PrintLevel) {
 		now := time.Now().UnixNano()
-		c.entries <- protoLogEntry{
+		c.entries <- protoLogEntryLabel{
 			entry: &logproto.Entry{
 				Timestamp: &timestamp.Timestamp{
 					Seconds: now / int64(time.Second),
@@ -65,6 +91,7 @@ func (c *clientProto) log(format string, level LogLevel, prefix string, args ...
 				},
 				Line: fmt.Sprintf(prefix+format, args...),
 			},
+			label: label,
 			level: level,
 		}
 	}
@@ -76,7 +103,9 @@ func (c *clientProto) Shutdown() {
 }
 
 func (c *clientProto) run() {
-	var batch []*logproto.Entry
+	var batch map[string][]*logproto.Entry //[]*jsonLogEntryLabel
+	batch = make(map[string][]*logproto.Entry)
+	// var batch []*logproto.Entry
 	batchSize := 0
 	maxWait := time.NewTimer(c.config.BatchWait)
 
@@ -98,11 +127,15 @@ func (c *clientProto) run() {
 			}
 
 			if entry.level >= c.config.SendLevel {
-				batch = append(batch, entry.entry)
+				if entry.label == "" {
+					entry.label = c.config.Labels
+				}
+				batch[entry.label] = append(batch[entry.label], entry.entry)
+
 				batchSize++
 				if batchSize >= c.config.BatchEntriesNumber {
 					c.send(batch)
-					batch = []*logproto.Entry{}
+					batch = make(map[string][]*logproto.Entry)
 					batchSize = 0
 					maxWait.Reset(c.config.BatchWait)
 				}
@@ -110,7 +143,7 @@ func (c *clientProto) run() {
 		case <-maxWait.C:
 			if batchSize > 0 {
 				c.send(batch)
-				batch = []*logproto.Entry{}
+				batch = make(map[string][]*logproto.Entry)
 				batchSize = 0
 			}
 			maxWait.Reset(c.config.BatchWait)
@@ -118,13 +151,15 @@ func (c *clientProto) run() {
 	}
 }
 
-func (c *clientProto) send(entries []*logproto.Entry) {
+func (c *clientProto) send(entries map[string][]*logproto.Entry) {
 	var streams []*logproto.Stream
-	streams = append(streams, &logproto.Stream{
-		Labels:  c.config.Labels,
-		Entries: entries,
-	})
 
+	for k, v := range entries {
+		streams = append(streams, &logproto.Stream{
+			Labels:  k,
+			Entries: v,
+		})
+	}
 	req := logproto.PushRequest{
 		Streams: streams,
 	}
